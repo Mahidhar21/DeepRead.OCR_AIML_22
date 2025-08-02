@@ -1,0 +1,12 @@
+
+gradio
+transformers
+torch
+paddleocr
+paddlepaddle
+opencv-python-headless
+opencv-contrib-python
+Pillow
+numpy
+scipy
+matplotlib

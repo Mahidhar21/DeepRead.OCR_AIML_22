@@ -1,0 +1,9 @@
+torch
+transformers
+Pillow
+opencv-python-headless
+paddleocr
+paddlepaddle
+gradio
+numpy
+spaces
