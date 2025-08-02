@@ -17,11 +17,9 @@ MODEL_HUB_ID = "imperiusrex/printedpaddle"
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14")
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14")
 
-# Set device to CPU
 device = "cpu"
 clip_model.to(device)
 
-# Language map for OCR models
 def process_image(img_path):
     """
     Processes an image to detect, crop, and OCR text, returning it in reading order.
@@ -32,11 +30,10 @@ def process_image(img_path):
     Returns:
         A string containing the reconstructed text.
     """
-    # Load CLIP model and processor
+    
     clip_model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14")
 
-    # Candidate language phrases for detection
     candidates = [
         "This is English text",
         # "This is Hindi text",
@@ -53,83 +50,17 @@ def process_image(img_path):
         # "This is Marathi text",
         # "This is Urdu text",
         "This is French text",
-        # "This is Spanish text",
-        # "This is Italian text",
-        # "This is Portuguese text",
-        # "This is Romanian text",
-        # "This is Hungarian text",
-        # "This is Indonesian text",
-        # "This is Lithuanian text",
-        # "This is Chinese Traditional text",
-        # "This is Malay text",
-        # "This is Dutch text",
-        # "This is Norwegian text",
-        # "This is Bosnian text",
-        # "This is Polish text",
-        # "This is Czech text",
-        # "This is Slovak text",
-        # "This is Welsh text",
-        # "This is Slovenian text",
-        # "This is Danish text",
-        # "This is Albanian text",
-        # "This is Estonian text",
-        # "This is Swedish text",
-        # "This is Irish text",
-        # "This is Swahili text",
-        # "This is Croatian text",
-        # "This is Uzbek text",
-        # "This is Turkish text",
-        "This is Latin text",
-        # "This is Belarusian text",
-        # "This is Ukrainian text"
+        "This is Latin text"
     ]
 
     # Map detected languages to PaddleOCR language codes
     lang_map = {
         "english": "en",
-        # "hindi": "hi",
-        # "tamil": "ta",
         "telugu": "te",
-        # "bengali": "bn",
-        # "arabic": "ar",
         "chinese": "ch",
-        # "japanese": "japan",
-        "korean": "korean",
         "russian": "ru",
-        # "kannada": "kn",
-        # "malayalam": "ml",
-        # "marathi": "mr",
-        # "urdu": "ur",
         "french": "fr",
-        # "spanish": "es",
-        # "italian": "it",
-        # "portuguese": "pt",
-        # "romanian": "ro",
-        # "hungarian": "hu",
-        # "indonesian": "id",
-        # "lithuanian": "lt",
-        # "chinese traditional": "chinese_cht",
-        # "malay": "ms",
-        # "dutch": "nl",
-        # "norwegian": "no",
-        # "bosnian": "bs",
-        # "polish": "pl",
-        # "czech": "cs",
-        # "slovak": "sk",
-        # "welsh": "cy",
-        # "slovenian": "sl",
-        # "danish": "da",
-        # "albanian": "sq",
-        # "estonian": "et",
-        # "swedish": "sv",
-        # "irish": "ga",
-        # "swahili": "sw",
-        # "croatian": "hr",
-        # "uzbek": "uz",
-        # "turkish": "tr",
         "latin": "la",
-        # "belarusian": "be",
-        # "ukrainian": "uk"
     }
 
     # Text Detection
@@ -161,19 +92,16 @@ def process_image(img_path):
     # Perform language detection for each cropped image and then OCR
     predicted_texts = []
     for i, cropped_img in enumerate(cropped_images):
-        # Get probabilities
         inputs = processor(text=candidates, images=cropped_img, return_tensors="pt", padding=True)
         with torch.no_grad():
             logits_per_image = clip_model(**inputs).logits_per_image
             probs = logits_per_image.softmax(dim=1)
 
-        # Get best language match
         best = probs.argmax().item()
         detected_lang_phrase = candidates[best]
         detected_lang = detected_lang_phrase.split()[-2].lower()
         lang_code = lang_map.get(detected_lang, "en")
 
-        # Perform OCR for the current cropped image with the detected language
         ocr = PaddleOCR(
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
@@ -199,12 +127,11 @@ def process_image(img_path):
       center_y = sum(y_coords) / len(y_coords)
       return center_x, center_y
 
-    # --- Step 1: Read all text and their centroid coordinates ---
+    
     all_text_blocks = []
     for i, box in enumerate(arr):
-        # Use the predicted text from the list
         text = predicted_texts[i]
-        if text: # Only add if text is not empty
+        if text: 
             center_x, center_y = get_box_center(box)
             all_text_blocks.append({
                 "text": text,
@@ -213,7 +140,6 @@ def process_image(img_path):
             })
 
 
-    # --- Step 2: Sort by y-coordinate, then by x-coordinate, and group into lines ---
     reconstructed_text = ""
     if all_text_blocks:
         # Sort by center_y, then by center_x
@@ -223,11 +149,9 @@ def process_image(img_path):
         if sorted_blocks:
             current_line = [sorted_blocks[0]]
             for block in sorted_blocks[1:]:
-                # Check if the vertical centers are close enough to be on the same line
-                if abs(block["center_y"] - current_line[-1]["center_y"]) < 40: # Y-threshold
+                if abs(block["center_y"] - current_line[-1]["center_y"]) < 40: 
                     current_line.append(block)
                 else:
-                    # Sort the current line by x-coordinate and add it to the lines list
                     current_line.sort(key=lambda item: item["center_x"])
                     lines.append(" ".join([item["text"] for item in current_line]))
                     current_line = [block]
@@ -237,7 +161,6 @@ def process_image(img_path):
                 current_line.sort(key=lambda item: item["center_x"])
                 lines.append(" ".join([item["text"] for item in current_line]))
 
-        # --- Step 3: Join the lines into a single string ---
         reconstructed_text = "\n".join(lines)
 
     return reconstructed_text
