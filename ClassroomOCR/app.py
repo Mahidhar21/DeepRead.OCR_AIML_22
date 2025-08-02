@@ -7,13 +7,10 @@ import spaces
 from ultralytics import YOLO
 from tqdm import tqdm
 
-# Fix for Ultralytics config write error in Hugging Face environment
 os.environ["YOLO_CONFIG_DIR"] = "/tmp"
 
-# Use GPU if available
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Load models onto the appropriate device
 extract_model = YOLO("best.pt").to(device)
 detect_model  = YOLO("yolov8n.pt").to(device)
 
@@ -21,8 +18,6 @@ detect_model  = YOLO("yolov8n.pt").to(device)
 def process_video(video_path):
     os.makedirs("frames", exist_ok=True)
 
-    # Step 1: Extract board-only frames
-    cap = cv2.VideoCapture(video_path)
     frames, idx = [], 0
     while cap.isOpened():
         ret, frame = cap.read()
@@ -38,7 +33,6 @@ def process_video(video_path):
     if not frames:
         raise RuntimeError("No frames with only 'board' and no 'person' found.")
 
-    # Step 2: Align
     def align_frames(ref, tgt):
         orb = cv2.ORB_create(500)
         k1, d1 = orb.detectAndCompute(ref, None)
@@ -63,12 +57,10 @@ def process_video(video_path):
     if not aligned:
         raise RuntimeError("Alignment failed for all frames.")
 
-    # Step 3: Median-fuse
     stack = np.stack(aligned, axis=0).astype(np.float32)
     median_board = np.median(stack, axis=0).astype(np.uint8)
     cv2.imwrite("clean_board.jpg", median_board)
 
-    # Step 4: Mask persons & selective fuse
     sum_img = np.zeros_like(aligned[0], dtype=np.float32)
     count = np.zeros(aligned[0].shape[:2], dtype=np.float32)
     for f in tqdm(aligned, desc="Masking persons"):
@@ -87,7 +79,6 @@ def process_video(video_path):
     selective = (sum_img / count[:, :, None]).astype(np.uint8)
     cv2.imwrite("fused_board_selective.jpg", selective)
 
-    # Step 5: Sharpen
     blur = cv2.GaussianBlur(selective, (5, 5), 0)
     sharp = cv2.addWeighted(selective, 1.5, blur, -0.5, 0)
     cv2.imwrite("sharpened_board_color.jpg", sharp)
