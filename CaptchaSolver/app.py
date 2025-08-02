@@ -5,7 +5,7 @@ from PIL import Image
 import json
 import os
 
-# --- 1. Define int_to_char mapping and decode_prediction function ---
+
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(CURRENT_DIR, "captcha_recognition_model_char.keras")
 INT_TO_CHAR_PATH = os.path.join(CURRENT_DIR, "int_to_char.json")
@@ -41,7 +41,7 @@ def load_model():
 
 model = load_model()
 
-# --- 2. Prediction function exposed to Gradio ---
+
 def predict_captcha(image: Image.Image) -> str:
     if model is None:
         return "Error: Model not loaded."
@@ -52,7 +52,6 @@ def predict_captcha(image: Image.Image) -> str:
     prediction = model.predict(img_array, verbose=0)
     return decode_prediction(prediction, int_to_char)
 
-# --- 3. Create and launch Gradio interface ---
 iface = gr.Interface(
     fn=predict_captcha,
     inputs=gr.Image(type="pil", label="Upload Captcha Image"),
@@ -62,6 +61,6 @@ iface = gr.Interface(
     allow_flagging="never"
 )
 
-# Only required locally; not needed on Hugging Face Spaces.
+
 if __name__ == "__main__":
     iface.launch()
