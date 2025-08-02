@@ -5,7 +5,7 @@ from PIL import Image
 import numpy as np
 import cv2
 from paddleocr import TextDetection
-from spaces import GPU  # ✅ Required for ZeroGPU
+from spaces import GPU  
 
 MODEL_HUB_ID = "imperiusrex/Handwritten_model"
 
@@ -22,7 +22,7 @@ ocr_det_model = TextDetection(model_name="PP-OCRv5_server_det")
 
 print("✅ Models loaded successfully.")
 
-@GPU  # ✅ This tells Hugging Face this function needs the GPU (H200)
+@GPU  
 def recognize_handwritten_text(image_input):
     if image_input is None:
         return "Please upload an image."
@@ -77,7 +77,6 @@ def recognize_handwritten_text(image_input):
 
     return "\n".join(recognized_texts)
 
-# --- Gradio Interface ---
 def build_interface():
     return gr.Interface(
         fn=recognize_handwritten_text,
